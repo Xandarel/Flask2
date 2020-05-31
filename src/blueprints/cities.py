@@ -1,3 +1,4 @@
+import sqlite3
 from flask import (
     Blueprint,
     jsonify,
@@ -24,6 +25,36 @@ class Cities(MethodView):
             for c in city:
                 city_list.append({'id': c[0], 'name': c[1]})
         return jsonify(city_list), 200
+
+    def post(self):
+        request_json = request.json
+        name = request_json.get('name')
+        try:
+            with db.connection as con:
+                con.execute("""
+                    INSERT INTO city (name)
+                    VALUES (?)
+                """,
+                (name,)
+                )
+                cur = con.execute(f"""
+                        SELECT *
+                        FROM city
+                        WHERE name = {name}
+                        """)
+                response = cur.fetchone()
+            return jsonify(dict(response)), 201
+        except sqlite3.IntegrityError:
+            with db.connection as con:
+                cur = con.execute(f"""
+                        SELECT *
+                        FROM city
+                        WHERE name =?
+                        """,
+                        (name,)
+                        )
+                response = cur.fetchone()
+            return jsonify(dict(response)), 302
 
 
 bp.add_url_rule('', view_func = Cities.as_view('cities'))
