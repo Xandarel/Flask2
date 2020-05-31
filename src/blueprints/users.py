@@ -273,7 +273,7 @@ class UserView(MethodView):
 
 
 class AddAds(MethodView):
-    def post(self,user_id):
+    def post(self, user_id):
         if user_id != session['id']:
             return '', 401
 

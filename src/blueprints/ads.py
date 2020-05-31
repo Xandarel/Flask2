@@ -2,6 +2,7 @@ from flask import (
     Blueprint,
     jsonify,
     request,
+    session
 )
 from flask.views import MethodView
 
@@ -60,6 +61,26 @@ class AdView(MethodView):
                 return '', 404
             else:
                 return jsonify(ad), 200
+    def delete(self,ads_id):
+        with db.connection as con:
+            cur = con.execute(f"""
+            SELECT account_id
+            FROM seller
+            JOIN ad ON ad.id ={ads_id}
+            WHERE ad.seller_id=seller.id
+            """)
+            user_id = cur.fetchone()
+
+        if user_id != session['id']:
+            return '', 401
+
+        with db.connection as con:
+            con.execute(f"""
+            DELETE FROM ad WHERE id = {ads_id}
+            """)
+            con.commit()
+        return '', 200
+
 
 
 bp.add_url_rule('', view_func=AdsView.as_view('ads'))
