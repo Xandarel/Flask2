@@ -132,32 +132,32 @@ class UserView(MethodView):
             return '', 401
 
         request_json = request.json
+        update_acc ='UPDATE account '
+        set = 'SET '
+        where = 'WHERE id=?'
+        value = list()
         first_name = request_json.get('first_name')
         if first_name:
-            with db.connection as con:
-                con.execute(
-                    'UPDATE account '
-                    'SET first_name = ? '
-                    'WHERE id = ?',
-                    (first_name, user_id),
-                )
-                con.commit()
-
-        print('here1')
+            set += 'first_name = ?'
+            value.append('first_name')
 
         last_name = request_json.get('last_name')
         if last_name:
-            with db.connection as con:
-                con.execute(
-                    'UPDATE account '
-                    'SET last_name = ? '
-                    'WHERE id = ?',
-                    (last_name, user_id),
-                )
-                con.commit()
+            set += ', last_name = ?'
+            value.append('first_name')
 
+        value.append(user_id)
+        with db.connection as con:
+            con.execute(update_acc + set + where,tuple(value))
+            con.commit()
 
         is_seller = request_json.get('is_seller')
+        phone = request_json.get('phone')
+        street = request_json.get('street')
+        zip_code = request_json.get('zip_code')
+        city_id = request_json.get('city_id')
+        home = request_json('home')
+
         if not is_seller:
             with db.connection as con:
                 con.execute("""
@@ -166,40 +166,53 @@ class UserView(MethodView):
                 """,
                 (user_id,)
                 )
-
-        phone = request_json.get('phone')
-        if phone:
+                con.commit()
+        else:
             with db.connection as con:
-                con.execute(
-                    'UPDATE seller '
-                    'SET phone = ? '
-                    'WHERE account_id = ?',
-                    (phone, user_id),
+                cur = con.execute("""
+                SELECT id
+                FROM seller
+                WHERE account_id =?
+                """,
+                (user_id,)
                 )
-                con.commit()
+                seller = cur.fetchone()
 
-        street = request_json.get('street')
-        if street:
-            with db.connection as con:
-                con.execute(
-                    'UPDATE seller '
-                    'SET street = ? '
-                    'WHERE account_id = ?',
-                    (street, user_id),
-                )
-                con.commit()
+            if seller:
+                update_acc = 'UPDATE seller '
+                set = 'SET '
+                value.clear()
 
-        zip_code = request_json.get('zip_code')
-        city_id = request_json.get('city_id')
-        if bool(zip_code):
-             with db.connection as con:
-                con.execute(
-                    'UPDATE seller '
-                    'SET zip_code = ? '
-                    'WHERE account_id = ?',
-                    (zip_code, user_id),
-                )
-                con.commit()
+                if phone:
+                    set += 'phone = ?'
+                    value.append(phone)
+
+                if street:
+                    set += ', street = ?'
+                    value.append(street)
+
+                if home:
+                    set += ', home = ?'
+                    value.append(home)
+
+                if zip_code:
+                    set += ', zip_code = ?'
+                    value.append(zip_code)
+
+                value.append(user_id)
+                with db.connection as con:
+                    con.execute(update_acc + set + where, tuple(value))
+                    con.commit()
+            else:
+                with db.connection as con:
+                    con.execute("""
+                        INSERT INTO seller (zip_code, street, home, phone, account_id)
+                        VALUES (?,?,?,?,?)
+                    """,
+                    (zip_code,street,home,phone,user_id,)
+                    )
+                    con.execute()
+
         if zip_code and city_id:
             with db.connection as con:
                 cur = con.execute(
@@ -210,7 +223,7 @@ class UserView(MethodView):
                 element = cur.fetchone()
             if not bool(element):
                 con.execute(
-                    'INSERT INTO zipcode(zip_code, city_id)'
+                    'INSERT INTO zipcode (zip_code, city_id)'
                     'VALUES (?,?) ',
                     (zip_code, city_id),
                 )
