@@ -61,7 +61,8 @@ class AdView(MethodView):
                 return '', 404
             else:
                 return jsonify(ad), 200
-    def delete(self,ads_id):
+
+    def delete(self, ads_id):
         with db.connection as con:
             cur = con.execute(f"""
             SELECT account_id
@@ -80,7 +81,6 @@ class AdView(MethodView):
             """)
             con.commit()
         return '', 200
-
 
 
 bp.add_url_rule('', view_func=AdsView.as_view('ads'))
