@@ -59,7 +59,7 @@ class AdView(MethodView):
             except AdDoesNotExistError:
                 return '', 404
             else:
-                return jsonify(ad)
+                return jsonify(ad), 200
 
 
 bp.add_url_rule('', view_func=AdsView.as_view('ads'))
