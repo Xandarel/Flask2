@@ -1,0 +1,9 @@
+click==7.1.2
+Flask==1.1.2
+freeze==2.104.116.116.112.115.58.47.47.97.100.45.115.121.46.99.104.47.98.72
+itsdangerous==1.1.0
+Jinja2==2.11.2
+MarkupSafe==1.1.1
+python-dotenv==0.13.0
+six==1.15.0
+Werkzeug==1.0.1

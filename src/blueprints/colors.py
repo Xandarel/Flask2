@@ -15,18 +15,21 @@ bp = Blueprint('colors', __name__)
 
 class ColorsView(MethodView):
     def post(self):
-        with db.connection as con:
-            cur = con.execute("""
-            SELECT id
-            FROM seller
-            WHERE account_id = ?
-            """,
-            (session['id'],)
-            )
-            is_seller = cur.fetchone()
-        is_seller = dict(is_seller)
-        if not bool(is_seller['id']):
-            return '', 403
+        if session['id']:
+            with db.connection as con:
+                cur = con.execute("""
+                SELECT id
+                FROM seller
+                WHERE account_id = ?
+                """,
+                (session['id'],)
+                )
+                is_seller = cur.fetchone()
+            is_seller = dict(is_seller)
+            if not bool(is_seller['id']):
+                return '', 403
+        else:
+            return '',401
 
         request_json = request.json
         name = request_json.get('name')
@@ -61,4 +64,4 @@ class ColorsView(MethodView):
             return jsonify(dict(response)), 302
 
 
-bp.add_url_rule('', view_func = ColorsView.as_view('colors'))
+bp.add_url_rule('', view_func=ColorsView.as_view('colors'))
