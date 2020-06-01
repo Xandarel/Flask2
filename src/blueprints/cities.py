@@ -2,14 +2,12 @@ import sqlite3
 from flask import (
     Blueprint,
     jsonify,
-    request,
-    session
+    request
 )
 
 from flask.views import MethodView
 
 from src.database import db
-from src.services.ads import AdsService
 
 bp = Blueprint('cities', __name__)
 
