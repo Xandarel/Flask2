@@ -29,7 +29,7 @@ class ColorsView(MethodView):
             if not bool(is_seller['id']):
                 return '', 403
         else:
-            return '',401
+            return '', 401
 
         request_json = request.json
         name = request_json.get('name')

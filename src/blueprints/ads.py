@@ -25,7 +25,7 @@ class AdsView(MethodView):
             return jsonify(ads)
 
     @auth_required
-    def post(self, user):
+    def post(self, user):#переписать
         user_id = user['id']
         request_json = request.json
         title = request_json.get('title')

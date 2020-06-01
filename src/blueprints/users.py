@@ -140,7 +140,7 @@ class UserView(MethodView):
 
         value.append(user_id)
         with db.connection as con:
-            con.execute(update_acc + set + where,tuple(value))
+            con.execute(update_acc + set + where, tuple(value))
             con.commit()
 
         is_seller = request_json.get('is_seller')
@@ -274,7 +274,20 @@ class UserView(MethodView):
 
 class AddAds(MethodView):
     def post(self, user_id):
-        if user_id != session['id']:
+        if session['id']:
+            with db.connection as con:
+                cur = con.execute("""
+                SELECT id
+                FROM seller
+                WHERE account_id = ?
+                """,
+                (session['id'],)
+                )
+                is_seller = cur.fetchone()
+            is_seller = dict(is_seller)
+            if not bool(is_seller['id']):
+                return '', 403
+        else:
             return '', 401
 
         with db.connection as con:
@@ -344,30 +357,42 @@ class AddAds(MethodView):
                 INSERT INTO ad (title, date, seller_id, car_id)
                 VALUES (?, ?, ?, ?)
             """,
-            (title, now, seller_id, car_id)
+            (title, now, dict(seller_id)['id'], car_id)
             )
             con.commit()
-            ad_id = cur.lastrowid()
+            ad_id = cur.lastrowid
 
-            cur = con.execute(f"""
+            cur = con.execute("""
                 SELECT date
                 FROM ad
-                WHERE seller_id ={seller_id}
-            """)
+                WHERE seller_id =?
+            """,
+            (dict(seller_id)['id'],)
+            )
             date = cur.fetchone()
 
         tags_id = list()
         for tag in tags:
-            with db.connection as con:
-                cur = con.execute(""" 
-                    SELECT id
-                    FROM tag
-                    WHERE name = ?
+            try:
+                with db.connection as con:
+                    cur = con.execute("""
+                        INSERT INTO tag (name)
+                        VALUES (?)
                     """,
                     (tag,)
-                )
-                tags_id.append(cur.fetchone())
-
+                    )
+                    con.commit()
+                    tags_id.append(cur.lastrowid)
+            except sqlite3.IntegrityError:
+                with db.connection as con:
+                    cur = con.execute(""" 
+                        SELECT id
+                        FROM tag
+                        WHERE name = ?
+                        """,
+                        (tag,)
+                    )
+                    tags_id.append(dict(cur.fetchone())['id'])
         for tag_id in tags_id:
             with db.connection as con:
                 cur = con.execute(""" 
@@ -386,12 +411,12 @@ class AddAds(MethodView):
                     FROM color
                     WHERE id = {color}
                 """)
-                ans = cur.fetchone().json
-                color_list.append({'id':color, 'name':ans['name'], 'hex':ans['hex']})
+                ans = dict(cur.fetchone())
+                color_list.append({'id': color, 'name': ans['name'], 'hex': ans['hex']})
 
-        response = {'id': user_id, 'seller_id': seller_id, 'title': title, 'date': date, 'tags': tags,
+        response = {'id': user_id, 'seller_id': dict(seller_id)['id'], 'title': title, 'date': now, 'tags': tags,
                     'car': {'make': make, 'model': model, 'color': color_list, 'mileage': mileage, 'num_owners': num_owners,
-                            'reg_number': reg_number,'images': images
+                            'reg_number': reg_number, 'images': images
                            }
                     }
         return jsonify(response), 200
