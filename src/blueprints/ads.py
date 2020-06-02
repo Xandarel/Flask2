@@ -19,11 +19,10 @@ bp = Blueprint('ads', __name__)
 
 class AdsView(MethodView):
     def get(self):
-        request_json = dict(request.args)
-        print (request_json)
+        request_dict = dict(request.args)
         with db.connection as con:
             service = AdsService(con)
-            ads = service.get_ads(request_json)
+            ads = service.get_ads(request_dict)
             return jsonify(ads)
 
     @auth_required

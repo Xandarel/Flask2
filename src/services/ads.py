@@ -13,19 +13,21 @@ class AdsService:
     def __init__(self, connection):
         self.connection = connection
 
-    def get_ads(self, request_json=None):
+    def get_ads(self, request_dict=None, id_user=None):
         query = ("""
         SELECT ALL ad.id, ad.seller_id, ad.title, ad.date, (SELECT DISTINCT GROUP_CONCAT(tag.name)
             FROM tag, adtag
             WHERE ad.id = adtag.ad_id AND tag.id = adtag.tag_id) as tags 
-        FROM ad
+        FROM ad, seller, account
         JOIN car ON ad.car_id=car.id
         """)
         where = 'WHERE '
-        group = "GROUP BY ad.id"
+        group = " GROUP BY ad.id"
         params = list()
-        if request_json is not None:
-            request_dict = dict(request_json)
+        if id_user is not None:
+            where += 'account.id = ? AND account.id=seller.account_id AND ad.seller_id=seller.id AND'
+            params.append(id_user)
+        if request_dict is not None:
             for rd in request_dict:
                 if rd == 'tags':
                     where += f' {rd} like ? AND'
@@ -34,6 +36,7 @@ class AdsService:
                     where += f' {rd} = ? AND'
                     params.append(request_dict[rd])
         where = ' '.join(where.split()[:-1])
+        print(query + where + group)
         cur = self.connection.execute(query + where + group, tuple(params))
         ads = cur.fetchall()
         ads = [dict(ad) for ad in ads]
