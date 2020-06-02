@@ -13,18 +13,62 @@ class AdsService:
     def __init__(self, connection):
         self.connection = connection
 
-    def get_ads(self, user_id=None):
-        query = (
-            'SELECT * '
-            'FROM ad '
-        )
-        params = ()
-        if user_id is not None:
-            query += 'WHERE user_id = ?'
-            params = (user_id,)
-        cur = self.connection.execute(query, params)
+    def get_ads(self, request_json=None):
+        query = ("""
+        SELECT ALL ad.id, ad.seller_id, ad.title, ad.date, (SELECT DISTINCT GROUP_CONCAT(tag.name)
+            FROM tag, adtag
+            WHERE ad.id = adtag.ad_id AND tag.id = adtag.tag_id) as tags 
+        FROM ad
+        JOIN car ON ad.car_id=car.id
+        """)
+        where = 'WHERE '
+        group = "GROUP BY ad.id"
+        params = list()
+        if request_json is not None:
+            request_dict = dict(request_json)
+            for rd in request_dict:
+                if rd == 'tags':
+                    where += f' {rd} like ? AND'
+                    params.append('%' + request_dict[rd] + '%')
+                else:
+                    where += f' {rd} = ? AND'
+                    params.append(request_dict[rd])
+        where = ' '.join(where.split()[:-1])
+        cur = self.connection.execute(query + where + group, tuple(params))
         ads = cur.fetchall()
-        return [dict(ad) for ad in ads]
+        ads = [dict(ad) for ad in ads]
+
+        for a in ads:
+            query = ("""
+                SELECT car.*
+                FROM car, ad
+                WHERE ad.id = ? AND car.id = ad.car_id
+            """)
+            params = (a['id'],)
+            cur = self.connection.execute(query,params)
+            car = dict(cur.fetchone())
+
+            query = ("""
+            SELECT color.*
+            FROM color, carcolor,car
+            WHERE car.id= ? AND carcolor.car_id=car.id AND carcolor.color_id=color.id""")
+            params = (car['id'],)
+            cur = self.connection.execute(query, params)
+            color =[dict(c) for c in cur.fetchall()]
+            car['color'] = color
+
+            query = ("""
+            SELECT title, url
+            FROM image, car
+            WHERE car.id = ? AND car.id=image.car_id
+            """)
+            params = (car['id'],)
+            cur = self.connection.execute(query, params)
+            image = [dict(im) for im in cur.fetchall()]
+            car['image'] = image
+            del car['id']
+            a['car'] = car
+        return ads
 
     def get_ad(self, ad_id):
         query = (
