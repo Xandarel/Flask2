@@ -19,7 +19,8 @@ bp = Blueprint('ads', __name__)
 
 class AdsView(MethodView):
     def get(self):
-        request_json = request.json
+        request_json = dict(request.args)
+        print (request_json)
         with db.connection as con:
             service = AdsService(con)
             ads = service.get_ads(request_json)
