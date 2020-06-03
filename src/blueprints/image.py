@@ -24,12 +24,14 @@ class ImagesView(MethodView):
                 is_seller = cur.fetchone()
             is_seller = dict(is_seller)
             if not bool(is_seller['id']):
-                return '', 403
+                return 'вы не являетесь продавцом', 401
 
         else:
-            return '', 401
-
-        request_file = request.files['file']
+            return 'вы не авторизованы', 401
+        if 'file' in request.files:
+            request_file = request.files['file']
+        else:
+            return 'нет изображения', 409
         filename = request_file.filename
         filename = filename[0: -1]
         print(filename)

@@ -35,11 +35,13 @@ class Cities(MethodView):
                 """,
                 (name,)
                 )
-                cur = con.execute(f"""
+                cur = con.execute("""
                         SELECT *
                         FROM city
-                        WHERE name = {name}
-                        """)
+                        WHERE name = ?
+                        """,
+                        (name,)
+                        )
                 response = cur.fetchone()
             return jsonify(dict(response)), 201
         except sqlite3.IntegrityError:
@@ -55,4 +57,4 @@ class Cities(MethodView):
             return jsonify(dict(response)), 302
 
 
-bp.add_url_rule('', view_func = Cities.as_view('cities'))
+bp.add_url_rule('', view_func=Cities.as_view('cities'))

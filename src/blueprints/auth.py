@@ -18,7 +18,7 @@ def login():
     password = request_json.get('password')
 
     if not email or not password:
-        return 'not user or password', 400
+        return 'not user or password', 401
 
     with db.connection as con:
         cur = con.execute(
@@ -40,5 +40,5 @@ def login():
 
 @bp.route('/logout', methods=['POST'])
 def logout():
-    session.pop('user_id', None)
+    session['id'] = None
     return '', 200

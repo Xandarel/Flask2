@@ -89,7 +89,7 @@ class UsersView(MethodView):
 
 class UserView(MethodView):
     def get(self, user_id):
-        if session['id'] is not None:
+        if session['id'] is None:
             return '', 401
         with db.connection as con:
             cur = con.execute(
@@ -139,9 +139,10 @@ class UserView(MethodView):
             value.append(last_name)
 
         value.append(user_id)
-        with db.connection as con:
-            con.execute(update_acc + set + where, tuple(value))
-            con.commit()
+        if first_name or last_name:
+            with db.connection as con:
+                con.execute(update_acc + set + where, tuple(value))
+                con.commit()
 
         is_seller = request_json.get('is_seller')
         phone = request_json.get('phone')
@@ -169,11 +170,14 @@ class UserView(MethodView):
                     """,
                     (user_id,)
                     )
-                    seller = cur.fetchone()
-
-                if seller:
+                    if cur.fetchone() is not None:
+                        seller = dict(cur.fetchone())
+                    else:
+                        seller = {'id': False}
+                if bool(seller['id']):
                     update_acc = 'UPDATE seller '
                     set = 'SET '
+                    where = 'WHERE account_id = ?'
                     value.clear()
 
                     if phone:
