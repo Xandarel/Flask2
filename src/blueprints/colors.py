@@ -75,8 +75,7 @@ class ColorsView(MethodView):
                 (session['id'],)
                 )
                 is_seller = cur.fetchone()
-            is_seller = dict(is_seller)
-            if not bool(is_seller['id']):
+            if is_seller is None:
                 return 'вы не являетесь продавцом', 403
         else:
             return 'вы не авторизированы', 403

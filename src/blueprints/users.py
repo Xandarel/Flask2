@@ -130,14 +130,14 @@ class UserView(MethodView):
         value = list()
         first_name = request_json.get('first_name')
         if first_name:
-            set += 'first_name = ?'
+            set += 'first_name = ?,'
             value.append(first_name)
 
         last_name = request_json.get('last_name')
         if last_name:
-            set += ', last_name = ?'
+            set += 'last_name = ?,'
             value.append(last_name)
-
+        set = set[:-1]
         value.append(user_id)
         if first_name or last_name:
             with db.connection as con:
